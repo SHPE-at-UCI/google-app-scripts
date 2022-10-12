@@ -1,4 +1,4 @@
-function getDayName(date = new Date(), locale = 'en-US') {
+function getTodaysName(date = new Date(), locale = 'en-US') {
   return date.toLocaleDateString(locale, {weekday: 'long'});
 }
 
@@ -6,7 +6,7 @@ function getDateString(date= new Date(), locale= 'en-US'){
   return date.toDateString(locale);
 }
 
-function myFunction() {
+function getSpecificThreads(){
   var senders   = ' from:employee.support@dailypay.com';
   var subjects  = ' subject:"💰 Your DailyPay balance just went up!"';
   var labels    = ' label:"_archive"';
@@ -16,38 +16,50 @@ function myFunction() {
 
   var threads = GmailApp.search(query,0,10);  
   console.log(`Found ${threads.length} threads`);
+  return threads;
+}
 
-  today = getDayName();
-  const target = "Tuesday";
+function sendFridayEmail(threads) {
+  const recipient = "josueal1@uci.edu";
+  let subject = ``;
+  var body = "^^";
 
-  if (today == target){
+  threads.forEach((t, index) => {
+    console.log(index, t.getFirstMessageSubject());
+    const todaysDate = getDateString();
+    const threadsDate = t.getLastMessageDate().toDateString();
 
-    const recipient = "josueal1@uci.edu";
-    let subject = ``;
-    var body = "^^";
+    if(threadsDate == todaysDate){
+      const messages = t.getMessages()
+      messages.forEach((m) => {
+          let mBody = m.getPlainBody();
+          let dailyBalanceMessage = mBody.substring(284, 312);
+          console.log(`dailyBalanceMessage: ${dailyBalanceMessage}`);
+          subject += dailyBalanceMessage;
+      })
+    }
+    else {
+      console.log(`threadId: ${t.getId()}, date is not today`);
+    }
 
-    threads.forEach((t, index) => {
-      console.log(index, t.getFirstMessageSubject());
-      const todaysDate = getDateString();
-      const threadsDate = t.getLastMessageDate().toDateString();
+  })
+  GmailApp.sendEmail(recipient, subject, body);
+  console.log("GmailApp.sendEmail() ran successfully!");
+}
 
-      if(threadsDate == todaysDate){
-        const messages = t.getMessages()
-        messages.forEach((m) => {
-            let mBody = m.getPlainBody();
-            let dailyBalanceMessage = mBody.substring(284, 312);
-            console.log(`dailyBalanceMessage: ${dailyBalanceMessage}`);
-            subject += dailyBalanceMessage;
-        })
-      }
-      else {
-        console.log(`threadId: ${t.getId()}, date is not today`);
-      }
+function myFunction() {
+  const dayToEmail = "Friday";
+  today = getTodaysName();
+  
+  var threads = getSpecificThreads();
 
-    })
-    GmailApp.sendEmail(recipient, subject, body);
+  if (today == dayToEmail){
+    console.log(`Today IS ${dayToEmail}, so calling sendFridayEmail(threads)`);
+    sendFridayEmail(threads);
   }
   else{
-    console.log(`it is not ${target} :(`);
+    console.log(`Today is not ${dayToEmail}, so must call cleanUpDailyPayEmails(threads)`);
+    //TODO: cleanUpDailyPayEmails()
   }
 }
+
